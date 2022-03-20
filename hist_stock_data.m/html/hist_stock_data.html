@@ -1,0 +1,467 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>hist_stock_data</title><meta name="generator" content="MATLAB 9.10"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2021-10-20"><meta name="DC.source" content="hist_stock_data.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">Parse inputs</a></li><li><a href="#4">Get historical data</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> stocks = hist_stock_data(start_date, end_date, varargin)
+</pre><pre class="codeinput"><span class="comment">% HIST_STOCK_DATA     Obtain historical stock data</span>
+<span class="comment">%   hist_stock_data(X,Y,'Ticker1','Ticker2',...) retrieves historical stock</span>
+<span class="comment">%   data for the ticker symbols Ticker1, Ticker2, etc... between the dates</span>
+<span class="comment">%   specified by X and Y.  X and Y can either be strings in the format</span>
+<span class="comment">%   ddmmyyyy or Matlab datenums, where X is the beginning date and Y is the</span>
+<span class="comment">%   ending date.  The program returns the stock data in a structure giving</span>
+<span class="comment">%   the Date, Open, High, Low, Close, Volume, and Adjusted Close price</span>
+<span class="comment">%   adjusted for dividends and splits.</span>
+<span class="comment">%</span>
+<span class="comment">%   hist_stock_data(X,Y,'tickers.txt') retrieves historical stock data</span>
+<span class="comment">%   using the ticker symbols found in the user-defined text file.  Ticker</span>
+<span class="comment">%   symbols must be separated by line feeds.</span>
+<span class="comment">%</span>
+<span class="comment">%   hist_stock_data(X,Y,{'Ticker1' 'Ticker2'}) combined the ticker symbols</span>
+<span class="comment">%   into a single cell array when calling hist_stock_data (sometimes easier</span>
+<span class="comment">%   for calling the funtion with a cell array of ticker symbols).</span>
+<span class="comment">%</span>
+<span class="comment">%   hist_stock_data(X,Y,'Ticker1','frequency',FREQ) retrieves historical</span>
+<span class="comment">%   stock data using the frequency specified by FREQ, which must be either</span>
+<span class="comment">%   'd' for daily, 'wk' for weekly, or 'mo' for monthly.</span>
+<span class="comment">%</span>
+<span class="comment">%   hist_stock_data(X,Y,'Ticker1','type','div') retrieves dividend data. If</span>
+<span class="comment">%   anything but 'div' is specified then it will default to retrieving</span>
+<span class="comment">%   historical prices.</span>
+<span class="comment">%</span>
+<span class="comment">%   EXAMPLES</span>
+<span class="comment">%       stocks = hist_stock_data('23012003','15042008','GOOG','C');</span>
+<span class="comment">%           Returns the structure array 'stocks' that holds historical</span>
+<span class="comment">%           stock data for Google and CitiBank for dates from January</span>
+<span class="comment">%           23, 2003 to April 15, 2008.</span>
+<span class="comment">%</span>
+<span class="comment">%       stocks = hist_stock_data('12101997','18092001','tickers.txt');</span>
+<span class="comment">%           Returns the structure arrary 'stocks' which holds historical</span>
+<span class="comment">%           stock data for the ticker symbols listed in the text file</span>
+<span class="comment">%           'tickers.txt' for dates from October 12, 1997 to September 18,</span>
+<span class="comment">%           2001.  The text file must be a column of ticker symbols</span>
+<span class="comment">%           separated by new lines.</span>
+<span class="comment">%</span>
+<span class="comment">%       stocks = hist_stock_data(now-10, now, {'GOOG' 'C'});</span>
+<span class="comment">%           Get stock data for approximately the last 10 days for the two</span>
+<span class="comment">%           tickers specified in the cell array.</span>
+<span class="comment">%</span>
+<span class="comment">%       stocks = hist_stock_data('12101997','18092001','C','frequency','w')</span>
+<span class="comment">%           Returns historical stock data for Citibank using the date range</span>
+<span class="comment">%           specified with a frequency of weeks.  Possible values for</span>
+<span class="comment">%           frequency are d (daily), wk (weekly), or mo (monthly).  If not</span>
+<span class="comment">%           specified, the default frequency is daily.</span>
+<span class="comment">%</span>
+<span class="comment">%       stocks = hist_stock_data('12101997','18092001','C','type','div')</span>
+<span class="comment">%            Returned historical dividend data for Citibank between Oct 12,</span>
+<span class="comment">%            1997 and September 18, 2001.</span>
+<span class="comment">%</span>
+<span class="comment">%   DATA STRUCTURE</span>
+<span class="comment">%       INPUT           DATA STRUCTURE      FORMAT</span>
+<span class="comment">%       X (start date)  ddmmyyyy            String</span>
+<span class="comment">%       Y (end date)    ddmmyyyy            String</span>
+<span class="comment">%       Ticker          NA                  String</span>
+<span class="comment">%       ticker.txt      NA                  Text file</span>
+<span class="comment">%       FREQ            NA                  String; 'd', 'wk', or 'mo'</span>
+<span class="comment">%       TYPE            NA                  String; 'div'</span>
+<span class="comment">%</span>
+<span class="comment">%   OUTPUT FORMAT</span>
+<span class="comment">%       All data is output in the structure 'stocks'.  Each structure</span>
+<span class="comment">%       element will contain the ticker name, then vectors consisting of</span>
+<span class="comment">%       the organized data sorted by date, followed by the Open, High, Low,</span>
+<span class="comment">%       Close, Volume, then Adjusted Close prices.</span>
+<span class="comment">%</span>
+<span class="comment">%   DATA FEED</span>
+<span class="comment">%       The historical stock data is obtained using Yahoo! Finance website.</span>
+<span class="comment">%       By using Yahoo! Finance, you agree not to redistribute the</span>
+<span class="comment">%       information found therein.  Therefore, this program is for personal</span>
+<span class="comment">%       use only, and any information that you obtain may not be</span>
+<span class="comment">%       redistributed.</span>
+<span class="comment">%</span>
+<span class="comment">%   NOTE</span>
+<span class="comment">%       This program uses the Matlab command urlread in a very basic form.</span>
+<span class="comment">%       If the program gives you an error and does not retrieve the stock</span>
+<span class="comment">%       information, it is most likely because there is a problem with the</span>
+<span class="comment">%       urlread command.  You may have to tweak the code to let the program</span>
+<span class="comment">%       connect to the internet and retrieve the data.</span>
+
+<span class="comment">% Created by Josiah Renfree</span>
+<span class="comment">% January 25, 2008</span>
+
+stocks = struct([]);        <span class="comment">% initialize data structure</span>
+</pre><h2 id="3">Parse inputs</h2><pre class="codeinput"><span class="comment">% Format start and end dates into Posix times. This is the number of</span>
+<span class="comment">% seconds since Jan 1, 1970. This previously used the posixtime function,</span>
+<span class="comment">% but since that is relatively new, it now does the calculation using</span>
+<span class="comment">% Matlab datenum's, which are in units of days, then converting to seconds.</span>
+origDate = datenum(<span class="string">'01-Jan-1970 00:00:00'</span>, <span class="string">'dd-mmm-yyyy HH:MM:SS'</span>);
+
+<span class="comment">% Convert input dates to Matlab datenums, if necessary</span>
+<span class="keyword">if</span> ischar(start_date)
+    startDate = (datenum(start_date, <span class="string">'ddmmyyyy'</span>) - origDate) * 24 * 60 * 60;
+<span class="keyword">else</span>
+    startDate = (floor(start_date) - origDate) * 24 * 60 * 60;
+<span class="keyword">end</span>
+<span class="keyword">if</span> ischar(end_date)
+    endDate = (datenum(end_date, <span class="string">'ddmmyyyy'</span>) - origDate) * 24 * 60 * 60;
+<span class="keyword">else</span>
+    endDate = (floor(end_date) - origDate) * 24 * 60 * 60;
+<span class="keyword">end</span>
+
+<span class="comment">% determine if user specified frequency</span>
+temp = find(strcmp(varargin,<span class="string">'frequency'</span>) == 1); <span class="comment">% search for frequency</span>
+<span class="keyword">if</span> isempty(temp)                            <span class="comment">% if not given</span>
+    freq = <span class="string">'d'</span>;                             <span class="comment">% default is daily</span>
+<span class="keyword">else</span>                                        <span class="comment">% if user supplies frequency</span>
+    freq = varargin{temp+1};                <span class="comment">% assign to user input</span>
+    varargin(temp:temp+1) = [];             <span class="comment">% remove from varargin</span>
+<span class="keyword">end</span>
+clear <span class="string">temp</span>
+
+<span class="comment">% determine if user specified event type</span>
+temp = find(strcmp(varargin,<span class="string">'type'</span>) == 1); <span class="comment">% search for frequency</span>
+<span class="keyword">if</span> isempty(temp)                            <span class="comment">% if not given</span>
+    event = <span class="string">'history'</span>;                      <span class="comment">% default is historical prices</span>
+<span class="keyword">else</span>                                        <span class="comment">% if user supplies frequency</span>
+    event = varargin{temp+1};               <span class="comment">% assign to user input</span>
+    varargin(temp:temp+1) = [];             <span class="comment">% remove from varargin</span>
+<span class="keyword">end</span>
+clear <span class="string">temp</span>
+
+<span class="comment">% If the first cell of varargin is itself a cell array, assume it is a cell</span>
+<span class="comment">% array of ticker symbols</span>
+<span class="keyword">if</span> iscell(varargin{1})
+    tickers = varargin{1};
+
+<span class="comment">% Otherwise, check to see if it's a .txt file</span>
+<span class="keyword">elseif</span> ~isempty(strfind(varargin{1},<span class="string">'.txt'</span>))
+    fid = fopen(varargin{1}, <span class="string">'r'</span>);
+    tickers = textscan(fid, <span class="string">'%s'</span>); tickers = tickers{:};
+    fclose(fid);
+
+<span class="comment">% Otherwise, assume it's either a single ticker or a list of tickers</span>
+<span class="keyword">else</span>
+    tickers = varargin;
+<span class="keyword">end</span>
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in hist_stock_data (line 97)
+if ischar(start_date)
+</pre><h2 id="4">Get historical data</h2><pre class="codeinput">h = waitbar(0, <span class="string">'Please Wait...'</span>);           <span class="comment">% create waitbar</span>
+idx = 1;                                    <span class="comment">% idx for current stock data</span>
+
+<span class="comment">% Cycle through each ticker symbol and retrieve historical data</span>
+<span class="keyword">for</span> i = 1:length(tickers)
+
+    <span class="comment">% Update waitbar to display current ticker</span>
+    waitbar((i-1)/length(tickers), h, <span class="keyword">...</span>
+        sprintf(<span class="string">'Retrieving stock data for %s (%0.2f%%)'</span>, <span class="keyword">...</span>
+        tickers{i}, (i-1)*100/length(tickers)))
+
+    <span class="comment">% Create url string for retrieving data</span>
+    url = sprintf([<span class="string">'https://query1.finance.yahoo.com/v7/finance/download/'</span>, <span class="keyword">...</span>
+        <span class="string">'%s?period1=%d&amp;period2=%d&amp;interval=1%s&amp;events=%s'</span>], <span class="keyword">...</span>
+        tickers{i}, startDate, endDate, freq, event);
+
+    <span class="comment">% Create webread options variable to specify UserAgent</span>
+    options = weboptions(<span class="string">'UserAgent'</span>, <span class="string">'Mozilla/5.0'</span>);
+
+    <span class="comment">% Try to download stock data. Put in try/catch block in case it fails</span>
+    <span class="keyword">try</span>
+        temp = webread(url, <span class="string">'matlabstockdata@yahoo.com'</span>, <span class="string">'historical stocks'</span>, options);
+
+    <span class="comment">% If data retrieval fails, skip to next ticker</span>
+    <span class="keyword">catch</span>
+        <span class="keyword">continue</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Write ticker symbol</span>
+    stocks(idx).Ticker = tickers{i};
+
+    <span class="comment">% Put data into appropriate variables</span>
+    <span class="keyword">if</span> strcmp(event, <span class="string">'history'</span>)     <span class="comment">% If historical prices</span>
+        stocks(idx).Date = temp.Date;
+        stocks(idx).Open = temp.Open;
+        stocks(idx).High = temp.High;
+        stocks(idx).Low = temp.Low;
+        stocks(idx).Close = temp.Close;
+        stocks(idx).AdjClose = temp.AdjClose;
+        stocks(idx).Volume = temp.Volume;
+
+    <span class="keyword">else</span>                            <span class="comment">% If dividends</span>
+        stocks(idx).Date = temp.Date;
+        stocks(idx).Dividend = temp.Dividends;
+    <span class="keyword">end</span>
+
+    <span class="comment">% Increment stock index</span>
+    idx = idx + 1;
+
+    <span class="comment">% update waitbar</span>
+    waitbar(i/length(tickers),h)
+<span class="keyword">end</span>
+close(h)    <span class="comment">% close waitbar</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2021a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function stocks = hist_stock_data(start_date, end_date, varargin)
+% HIST_STOCK_DATA     Obtain historical stock data
+%   hist_stock_data(X,Y,'Ticker1','Ticker2',...) retrieves historical stock
+%   data for the ticker symbols Ticker1, Ticker2, etc... between the dates
+%   specified by X and Y.  X and Y can either be strings in the format
+%   ddmmyyyy or Matlab datenums, where X is the beginning date and Y is the
+%   ending date.  The program returns the stock data in a structure giving
+%   the Date, Open, High, Low, Close, Volume, and Adjusted Close price
+%   adjusted for dividends and splits.
+%
+%   hist_stock_data(X,Y,'tickers.txt') retrieves historical stock data
+%   using the ticker symbols found in the user-defined text file.  Ticker
+%   symbols must be separated by line feeds.
+%
+%   hist_stock_data(X,Y,{'Ticker1' 'Ticker2'}) combined the ticker symbols
+%   into a single cell array when calling hist_stock_data (sometimes easier
+%   for calling the funtion with a cell array of ticker symbols).
+%
+%   hist_stock_data(X,Y,'Ticker1','frequency',FREQ) retrieves historical
+%   stock data using the frequency specified by FREQ, which must be either
+%   'd' for daily, 'wk' for weekly, or 'mo' for monthly.
+%
+%   hist_stock_data(X,Y,'Ticker1','type','div') retrieves dividend data. If
+%   anything but 'div' is specified then it will default to retrieving
+%   historical prices.
+%
+%   EXAMPLES
+%       stocks = hist_stock_data('23012003','15042008','GOOG','C');
+%           Returns the structure array 'stocks' that holds historical
+%           stock data for Google and CitiBank for dates from January
+%           23, 2003 to April 15, 2008.
+%
+%       stocks = hist_stock_data('12101997','18092001','tickers.txt');
+%           Returns the structure arrary 'stocks' which holds historical
+%           stock data for the ticker symbols listed in the text file
+%           'tickers.txt' for dates from October 12, 1997 to September 18,
+%           2001.  The text file must be a column of ticker symbols
+%           separated by new lines.
+%
+%       stocks = hist_stock_data(now-10, now, {'GOOG' 'C'});
+%           Get stock data for approximately the last 10 days for the two
+%           tickers specified in the cell array.
+%
+%       stocks = hist_stock_data('12101997','18092001','C','frequency','w')
+%           Returns historical stock data for Citibank using the date range
+%           specified with a frequency of weeks.  Possible values for
+%           frequency are d (daily), wk (weekly), or mo (monthly).  If not
+%           specified, the default frequency is daily.
+%
+%       stocks = hist_stock_data('12101997','18092001','C','type','div')
+%            Returned historical dividend data for Citibank between Oct 12,
+%            1997 and September 18, 2001.
+%
+%   DATA STRUCTURE
+%       INPUT           DATA STRUCTURE      FORMAT
+%       X (start date)  ddmmyyyy            String
+%       Y (end date)    ddmmyyyy            String
+%       Ticker          NA                  String 
+%       ticker.txt      NA                  Text file
+%       FREQ            NA                  String; 'd', 'wk', or 'mo'
+%       TYPE            NA                  String; 'div'
+%
+%   OUTPUT FORMAT
+%       All data is output in the structure 'stocks'.  Each structure
+%       element will contain the ticker name, then vectors consisting of
+%       the organized data sorted by date, followed by the Open, High, Low,
+%       Close, Volume, then Adjusted Close prices.
+%
+%   DATA FEED
+%       The historical stock data is obtained using Yahoo! Finance website.
+%       By using Yahoo! Finance, you agree not to redistribute the
+%       information found therein.  Therefore, this program is for personal
+%       use only, and any information that you obtain may not be
+%       redistributed.
+%
+%   NOTE
+%       This program uses the Matlab command urlread in a very basic form.
+%       If the program gives you an error and does not retrieve the stock
+%       information, it is most likely because there is a problem with the
+%       urlread command.  You may have to tweak the code to let the program
+%       connect to the internet and retrieve the data.
+
+% Created by Josiah Renfree
+% January 25, 2008
+
+stocks = struct([]);        % initialize data structure
+
+%% Parse inputs
+
+% Format start and end dates into Posix times. This is the number of
+% seconds since Jan 1, 1970. This previously used the posixtime function,
+% but since that is relatively new, it now does the calculation using
+% Matlab datenum's, which are in units of days, then converting to seconds.
+origDate = datenum('01-Jan-1970 00:00:00', 'dd-mmm-yyyy HH:MM:SS');
+
+% Convert input dates to Matlab datenums, if necessary
+if ischar(start_date)
+    startDate = (datenum(start_date, 'ddmmyyyy') - origDate) * 24 * 60 * 60;
+else
+    startDate = (floor(start_date) - origDate) * 24 * 60 * 60;
+end
+if ischar(end_date)
+    endDate = (datenum(end_date, 'ddmmyyyy') - origDate) * 24 * 60 * 60;
+else
+    endDate = (floor(end_date) - origDate) * 24 * 60 * 60;
+end
+
+% determine if user specified frequency
+temp = find(strcmp(varargin,'frequency') == 1); % search for frequency
+if isempty(temp)                            % if not given
+    freq = 'd';                             % default is daily
+else                                        % if user supplies frequency
+    freq = varargin{temp+1};                % assign to user input
+    varargin(temp:temp+1) = [];             % remove from varargin
+end
+clear temp
+
+% determine if user specified event type
+temp = find(strcmp(varargin,'type') == 1); % search for frequency
+if isempty(temp)                            % if not given
+    event = 'history';                      % default is historical prices
+else                                        % if user supplies frequency
+    event = varargin{temp+1};               % assign to user input
+    varargin(temp:temp+1) = [];             % remove from varargin
+end
+clear temp
+
+% If the first cell of varargin is itself a cell array, assume it is a cell
+% array of ticker symbols
+if iscell(varargin{1})
+    tickers = varargin{1};
+
+% Otherwise, check to see if it's a .txt file
+elseif ~isempty(strfind(varargin{1},'.txt'))
+    fid = fopen(varargin{1}, 'r');
+    tickers = textscan(fid, '%s'); tickers = tickers{:};
+    fclose(fid);
+    
+% Otherwise, assume it's either a single ticker or a list of tickers
+else
+    tickers = varargin;
+end
+
+%% Get historical data
+
+h = waitbar(0, 'Please Wait...');           % create waitbar
+idx = 1;                                    % idx for current stock data
+
+% Cycle through each ticker symbol and retrieve historical data
+for i = 1:length(tickers)
+    
+    % Update waitbar to display current ticker
+    waitbar((i-1)/length(tickers), h, ...
+        sprintf('Retrieving stock data for %s (%0.2f%%)', ...
+        tickers{i}, (i-1)*100/length(tickers)))
+    
+    % Create url string for retrieving data
+    url = sprintf(['https://query1.finance.yahoo.com/v7/finance/download/', ...
+        '%s?period1=%d&period2=%d&interval=1%s&events=%s'], ...
+        tickers{i}, startDate, endDate, freq, event);
+    
+    % Create webread options variable to specify UserAgent
+    options = weboptions('UserAgent', 'Mozilla/5.0');
+    
+    % Try to download stock data. Put in try/catch block in case it fails
+    try
+        temp = webread(url, 'matlabstockdata@yahoo.com', 'historical stocks', options);
+        
+    % If data retrieval fails, skip to next ticker
+    catch
+        continue
+    end
+    
+    % Write ticker symbol
+    stocks(idx).Ticker = tickers{i};
+    
+    % Put data into appropriate variables
+    if strcmp(event, 'history')     % If historical prices
+        stocks(idx).Date = temp.Date;
+        stocks(idx).Open = temp.Open;
+        stocks(idx).High = temp.High;
+        stocks(idx).Low = temp.Low;
+        stocks(idx).Close = temp.Close;
+        stocks(idx).AdjClose = temp.AdjClose;
+        stocks(idx).Volume = temp.Volume;
+                
+    else                            % If dividends
+        stocks(idx).Date = temp.Date;
+        stocks(idx).Dividend = temp.Dividends;
+    end
+
+    % Increment stock index
+    idx = idx + 1;                      
+
+    % update waitbar
+    waitbar(i/length(tickers),h)
+end
+close(h)    % close waitbar
+##### SOURCE END #####
+--></body></html>
